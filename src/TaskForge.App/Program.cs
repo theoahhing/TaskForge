@@ -2,30 +2,38 @@
     Program file used to... 
 */
 
+using System.Diagnostics;
 using TaskForge.App.Services;
 
-Console.WriteLine("=== TaskForge ===");
+ProcessService processService = new();
 
-ExeScannerService exeScannerService = new();
+var processes = processService.GetRunningProcesses();
 
-Console.WriteLine("Enter directory path to scan: ");
-string? inputPath = Console.ReadLine();
+Console.WriteLine("=== Running Processes ===\n");
 
-try
+// Show first 50 for sanity
+var displayList = processes.Take(200).ToList();
+
+for (int i = 0; i < displayList.Count; i++)
 {
-    List<string> executables = exeScannerService.FindExecutables(inputPath ?? "");
-
-    Console.WriteLine($"\nFound {executables.Count} executable(s):\n");
-
-    foreach( string executable in executables)
-    {
-        Console.WriteLine(executable);
-    }
-}
-catch(Exception ex)
-{
-    Console.WriteLine($"\n[ERROR]: {ex.Message}");
+    var p = displayList[i];
+    Console.WriteLine($"{i}: {p.ProcessName} (PID: {p.Id})");
 }
 
-Console.WriteLine("\nPress any key to exit...");
-Console.ReadKey();
+Console.Write("\nSelect process index to kill: ");
+string? input = Console.ReadLine();
+
+if (int.TryParse(input, out int index) && index >= 0 && index < displayList.Count)
+{
+    var selected = displayList[index];
+
+    Console.WriteLine($"\nKilling: {selected.ProcessName} (PID: {selected.Id})");
+
+    bool success = processService.StopProcessById(selected.Id);
+
+    Console.WriteLine(success ? "Process stopped successfully." : "Failed to stop process.");
+}
+else
+{
+    Console.WriteLine("Invalid selection.");
+}
