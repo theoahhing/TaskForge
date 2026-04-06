@@ -15,15 +15,17 @@ namespace TaskForge.App.Services;
 public class TaskRunnerService
 {
     private readonly ProcessService _processService;
+    private readonly LoggerService _loggerService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TaskRunnerService"/> class.
     /// </summary>
     /// <param name="processService">The process service used for process-related actions.</param>
     /// <exception cref="ArgumentNullException">Thrown when the process service is null.</exception>
-    public TaskRunnerService(ProcessService processService)
+    public TaskRunnerService(ProcessService processService, LoggerService loggerService)
     {
         _processService = processService ?? throw new ArgumentNullException(nameof(processService));
+        _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
     }
 
     /// <summary>
@@ -246,6 +248,6 @@ public class TaskRunnerService
     private void AddMessage(TaskRunResult result, string message)
     {
         result.Messages.Add(message);
-        Console.WriteLine(message);
+        _loggerService.LogInfo(message);
     }
 }

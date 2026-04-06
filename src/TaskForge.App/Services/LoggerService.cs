@@ -1,7 +1,7 @@
 /*
     Logger Service is responsible for writing application log messages.
-    It supports structured console logging with timestamps and log levels,
-    and can be extended later to support file-based logging.
+    It supports structured console logging and file-based logging with
+    timestamps and severity levels.
 */
 
 using TaskForge.App.Models;
@@ -13,10 +13,22 @@ public class LoggerService
 {
     private readonly object _lock = new();
 
+    private readonly string _logDirectory = "Logs";
+    private readonly string _logFilePath;
+
+    public LoggerService()
+    {
+        // Ensure log directory exists
+        Directory.CreateDirectory(_logDirectory);
+
+        // Create log file name based on date
+        string fileName = $"TaskForge_{DateTime.Now:yyyy-MM-dd}.log";
+        _logFilePath = Path.Combine(_logDirectory, fileName);
+    }
+
     /// <summary>
     /// Writes an informational log message.
     /// </summary>
-    /// <param name="message">The message to log.</param>
     public void LogInfo(string message)
     {
         Log(message, LogLevel.Info);
@@ -25,7 +37,6 @@ public class LoggerService
     /// <summary>
     /// Writes a debug log message.
     /// </summary>
-    /// <param name="message">The message to log.</param>
     public void LogDebug(string message)
     {
         Log(message, LogLevel.Debug);
@@ -34,7 +45,6 @@ public class LoggerService
     /// <summary>
     /// Writes a warning log message.
     /// </summary>
-    /// <param name="message">The message to log.</param>
     public void LogWarning(string message)
     {
         Log(message, LogLevel.Warning);
@@ -43,17 +53,14 @@ public class LoggerService
     /// <summary>
     /// Writes an error log message.
     /// </summary>
-    /// <param name="message">The message to log.</param>
     public void LogError(string message)
     {
         Log(message, LogLevel.Error);
     }
 
     /// <summary>
-    /// Writes a log message using the specified log level.
+    /// Writes a log message with a specified severity level.
     /// </summary>
-    /// <param name="message">The message to log.</param>
-    /// <param name="level">The severity level.</param>
     public void Log(string message, LogLevel level)
     {
         message = StringUtil.SafeTrim(message);
@@ -68,7 +75,19 @@ public class LoggerService
 
         lock (_lock)
         {
+            // Console output
             Console.WriteLine(formattedMessage);
+
+            // File output
+            try
+            {
+                File.AppendAllText(_logFilePath, formattedMessage + Environment.NewLine);
+            }
+            catch
+            {
+                // Avoid crashing the app due to logging failure
+                Console.WriteLine("Failed to write to log file.");
+            }
         }
     }
 }
