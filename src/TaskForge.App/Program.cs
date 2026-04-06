@@ -1,39 +1,42 @@
 ﻿/*
-    Program file used to... 
+    Program file is the entry point of the application responsible for initializing
+    services and executing test or runtime logic.
 */
 
 using System.Diagnostics;
+using TaskForge.App.Models;
+using TaskForge.App.Services;
+
+using TaskForge.App.Models;
 using TaskForge.App.Services;
 
 ProcessService processService = new();
+TaskRunnerService taskRunnerService = new(processService);
 
-var processes = processService.GetRunningProcesses();
-
-Console.WriteLine("=== Running Processes ===\n");
-
-// Show first 50 for sanity
-var displayList = processes.Take(200).ToList();
-
-for (int i = 0; i < displayList.Count; i++)
+AppTask task = new()
 {
-    var p = displayList[i];
-    Console.WriteLine($"{i}: {p.ProcessName} (PID: {p.Id})");
-}
+    Name = "Notepad Test Task",
+    Actions = new List<TaskAction>
+    {
+        new TaskAction
+        {
+            Type = "start",
+            Value = @"C:\Windows\System32\notepad.exe"
+        },
+        new TaskAction
+        {
+            Type = "wait",
+            DelayMs = 5000
+        },
+        new TaskAction
+        {
+            Type = "stop",
+            Value = "notepad"
+        }
+    }
+};
 
-Console.Write("\nSelect process index to kill: ");
-string? input = Console.ReadLine();
+taskRunnerService.RunTask(task);
 
-if (int.TryParse(input, out int index) && index >= 0 && index < displayList.Count)
-{
-    var selected = displayList[index];
-
-    Console.WriteLine($"\nKilling: {selected.ProcessName} (PID: {selected.Id})");
-
-    bool success = processService.StopProcessById(selected.Id);
-
-    Console.WriteLine(success ? "Process stopped successfully." : "Failed to stop process.");
-}
-else
-{
-    Console.WriteLine("Invalid selection.");
-}
+Console.WriteLine("Press any key to exit...");
+Console.ReadKey();

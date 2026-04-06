@@ -1,9 +1,6 @@
 /*
-    Process Service class will handle executables:
-        - Start an executable
-        - Stop a process
-        - Check if a process is running
-        - List running processes
+    Process Service class handles system process operations including starting,
+    stopping, and querying runing processes.
 */
 
 using System.Diagnostics;

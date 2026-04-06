@@ -1,6 +1,6 @@
 /*
-    String Utilities class will define methods that will be used to handle all string methods required
-    for this project.
+    String Utilities class provides reusable helper methods for common
+    string operations such as validation, formatting, and normalization.
 */
 
 using System.Text;
