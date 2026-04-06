@@ -1,5 +1,5 @@
 /*
-    TaskConfigService is responsible for loading and saving task definitions
+    Task Config Service is responsible for loading and saving task definitions
     from external sources such as JSON files. It allows tasks to be configured
     without modifying application code.
 */
