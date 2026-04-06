@@ -1,42 +1,37 @@
 ﻿/*
-    Program file is the entry point of the application responsible for initializing
-    services and executing test or runtime logic.
+    Program is the entry point of the application. It is responsible for
+    initializing services and executing test or runtime logic.
 */
 
-using System.Diagnostics;
-using TaskForge.App.Models;
 using TaskForge.App.Services;
 
-using TaskForge.App.Models;
-using TaskForge.App.Services;
+Console.WriteLine("=== TaskForge ===");
 
+// Build services
 ProcessService processService = new();
-TaskRunnerService taskRunnerService = new(processService);
+TaskRunnerService taskRunner = new(processService);
+TaskConfigService configService = new();
 
-AppTask task = new()
-{
-    Name = "Notepad Test Task",
-    Actions = new List<TaskAction>
-    {
-        new TaskAction
-        {
-            Type = "start",
-            Value = @"C:\Windows\System32\notepad.exe"
-        },
-        new TaskAction
-        {
-            Type = "wait",
-            DelayMs = 5000
-        },
-        new TaskAction
-        {
-            Type = "stop",
-            Value = "notepad"
-        }
-    }
-};
+// Build file path
+string taskFilePath = Path.Combine("Config", "task.json");
 
-taskRunnerService.RunTask(task);
+// Debug (optional but useful)
+Console.WriteLine($"Current directory: {Directory.GetCurrentDirectory()}");
+Console.WriteLine($"Looking for: {Path.GetFullPath(taskFilePath)}");
 
-Console.WriteLine("Press any key to exit...");
+// Load task from JSON
+var task = configService.LoadTaskFromFile(taskFilePath);
+
+// Run task
+var result = taskRunner.RunTask(task);
+
+// Print summary
+Console.WriteLine("\n=== Task Summary ===");
+Console.WriteLine($"Task Name: {result.TaskName}");
+Console.WriteLine($"Success: {result.Success}");
+Console.WriteLine($"Total Actions: {result.TotalActions}");
+Console.WriteLine($"Successful Actions: {result.SuccessfulActions}");
+Console.WriteLine($"Failed Actions: {result.FailedActions}");
+
+Console.WriteLine("\nPress any key to exit...");
 Console.ReadKey();

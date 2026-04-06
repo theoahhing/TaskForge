@@ -1,6 +1,6 @@
 /*
-    Exe Scanner Service class scans directories to locate executable files
-    and provides utilities for validating and extracting executable info.
+    ExeScannerService scans directories to locate executable files (.exe)
+    and provides utilities for validating and extracting executable information.
 */
 
 using TaskForge.App.Utils;

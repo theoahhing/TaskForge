@@ -1,0 +1,17 @@
+{
+  "name": "Notepad Test Task",
+  "actions": [
+    {
+      "type": "Start",
+      "value": "C:\\Windows\\System32\\notepad.exe"
+    },
+    {
+      "type": "Wait",
+      "delayMs": 3000
+    },
+    {
+      "type": "Stop",
+      "value": "notepad"
+    }
+  ]
+}
