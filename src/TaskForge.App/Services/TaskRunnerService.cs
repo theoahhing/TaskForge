@@ -21,7 +21,8 @@ public class TaskRunnerService
     /// Initializes a new instance of the <see cref="TaskRunnerService"/> class.
     /// </summary>
     /// <param name="processService">The process service used for process-related actions.</param>
-    /// <exception cref="ArgumentNullException">Thrown when the process service is null.</exception>
+    /// <param name="loggerService">The logger service used for task execution logging.</param>
+    /// <exception cref="ArgumentNullException">Thrown when a required dependency is null.</exception>
     public TaskRunnerService(ProcessService processService, LoggerService loggerService)
     {
         _processService = processService ?? throw new ArgumentNullException(nameof(processService));
@@ -45,7 +46,7 @@ public class TaskRunnerService
             TotalActions = task.Actions.Count
         };
 
-        AddMessage(result, $"Starting task: {task.Name}");
+        AddInfoMessage(result, $"Starting task: {task.Name}");
 
         for (int i = 0; i < task.Actions.Count; i++)
         {
@@ -60,28 +61,31 @@ public class TaskRunnerService
                 if (actionSucceeded)
                 {
                     result.SuccessfulActions++;
-                    AddMessage(result, $"Action {i + 1} succeeded: {GetActionDescription(action)}");
+                    AddInfoMessage(result, $"Action {i + 1} succeeded: {GetActionDescription(action)}");
                 }
                 else
                 {
                     result.FailedActions++;
-                    AddMessage(result, $"Action {i + 1} failed: {GetActionDescription(action)}");
+                    AddWarningMessage(result, $"Action {i + 1} failed: {GetActionDescription(action)}");
                 }
             }
             catch (Exception ex)
             {
                 result.FailedActions++;
-                AddMessage(result, $"Action {i + 1} threw an error: {ex.Message}");
+                AddErrorMessage(result, $"Action {i + 1} threw an error: {ex.Message}");
             }
         }
 
         result.Success = result.FailedActions == 0;
 
-        AddMessage(
-            result,
-            result.Success
-                ? $"Task completed successfully: {task.Name}"
-                : $"Task completed with errors: {task.Name}");
+        if (result.Success)
+        {
+            AddInfoMessage(result, $"Task completed successfully: {task.Name}");
+        }
+        else
+        {
+            AddWarningMessage(result, $"Task completed with errors: {task.Name}");
+        }
 
         return result;
     }
@@ -106,7 +110,7 @@ public class TaskRunnerService
                 return ExecuteWaitAction(action, result);
 
             default:
-                AddMessage(result, $"Unsupported action type: {action.Type}");
+                AddErrorMessage(result, $"Unsupported action type: {action.Type}");
                 return false;
         }
     }
@@ -123,7 +127,7 @@ public class TaskRunnerService
 
         if (StringUtil.IsNullOrWhiteSpace(executablePath))
         {
-            AddMessage(result, "Start action requires an executable path.");
+            AddWarningMessage(result, "Start action requires an executable path.");
             return false;
         }
 
@@ -131,11 +135,11 @@ public class TaskRunnerService
 
         if (process == null)
         {
-            AddMessage(result, $"Failed to start executable: {executablePath}");
+            AddErrorMessage(result, $"Failed to start executable: {executablePath}");
             return false;
         }
 
-        AddMessage(result, $"Started process '{process.ProcessName}' (PID: {process.Id}).");
+        AddInfoMessage(result, $"Started process '{process.ProcessName}' (PID: {process.Id}).");
         return true;
     }
 
@@ -151,7 +155,7 @@ public class TaskRunnerService
 
         if (StringUtil.IsNullOrWhiteSpace(processName))
         {
-            AddMessage(result, "Stop action requires a process name.");
+            AddWarningMessage(result, "Stop action requires a process name.");
             return false;
         }
 
@@ -159,11 +163,11 @@ public class TaskRunnerService
 
         if (stoppedCount <= 0)
         {
-            AddMessage(result, $"No processes were stopped for name '{processName}'.");
+            AddWarningMessage(result, $"No processes were stopped for name '{processName}'.");
             return false;
         }
 
-        AddMessage(result, $"Stopped {stoppedCount} process(es) named '{processName}'.");
+        AddInfoMessage(result, $"Stopped {stoppedCount} process(es) named '{processName}'.");
         return true;
     }
 
@@ -177,11 +181,11 @@ public class TaskRunnerService
     {
         if (action.DelayMs < 0)
         {
-            AddMessage(result, "Wait action cannot have a negative delay.");
+            AddWarningMessage(result, "Wait action cannot have a negative delay.");
             return false;
         }
 
-        AddMessage(result, $"Waiting for {action.DelayMs} ms.");
+        AddInfoMessage(result, $"Waiting for {action.DelayMs} ms.");
         Thread.Sleep(action.DelayMs);
         return true;
     }
@@ -241,13 +245,35 @@ public class TaskRunnerService
     }
 
     /// <summary>
-    /// Adds a message to the result and writes it to the console.
+    /// Adds an informational message to the task result and logger.
     /// </summary>
     /// <param name="result">The task result.</param>
     /// <param name="message">The message to add.</param>
-    private void AddMessage(TaskRunResult result, string message)
+    private void AddInfoMessage(TaskRunResult result, string message)
     {
         result.Messages.Add(message);
         _loggerService.LogInfo(message);
+    }
+
+    /// <summary>
+    /// Adds a warning message to the task result and logger.
+    /// </summary>
+    /// <param name="result">The task result.</param>
+    /// <param name="message">The message to add.</param>
+    private void AddWarningMessage(TaskRunResult result, string message)
+    {
+        result.Messages.Add(message);
+        _loggerService.LogWarning(message);
+    }
+
+    /// <summary>
+    /// Adds an error message to the task result and logger.
+    /// </summary>
+    /// <param name="result">The task result.</param>
+    /// <param name="message">The message to add.</param>
+    private void AddErrorMessage(TaskRunResult result, string message)
+    {
+        result.Messages.Add(message);
+        _loggerService.LogError(message);
     }
 }

@@ -10,40 +10,16 @@ namespace TaskForge.App.Services;
 
 public class ProcessService
 {
+    private readonly LoggerService _loggerService;
 
     /// <summary>
-    /// Retrieves all running processes.
+    /// Initializes a new instance of the <see cref="ProcessService"/> class.
     /// </summary>
-    /// <returns>A list of running processes.</returns>
-    public List<Process> GetRunningProcesses()
+    /// <param name="loggerService">The logger service used for diagnostic output.</param>
+    /// <exception cref="ArgumentNullException">Thrown when the logger service is null.</exception>
+    public ProcessService(LoggerService loggerService)
     {
-        return Process
-            .GetProcesses()
-            .OrderBy(p => p.ProcessName)
-            .ToList();
-    }
-
-    /// <summary>
-    /// Stops a process by its process ID.
-    /// </summary>
-    /// <param name="processId">The process ID.</param>
-    /// <returns>True if the process was stopped successfully; otherwise false.</returns>
-    public bool StopProcessById(int processId)
-    {
-        try
-        {
-            Process process = Process.GetProcessById(processId);
-
-            process.Kill();
-            process.WaitForExit();
-
-            return true;
-        }
-        catch(Exception ex)
-        {
-            Console.WriteLine($"Failed to stop process with ID {processId}: {ex.Message}");
-            return false;
-        }
+        _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
     }
 
     /// <summary>
@@ -77,11 +53,22 @@ public class ProcessService
                 UseShellExecute = true
             };
 
-            return Process.Start(startInfo);
+            Process? process = Process.Start(startInfo);
+
+            if (process != null)
+            {
+                _loggerService.LogInfo($"Started process '{process.ProcessName}' from path '{exePath}'.");
+            }
+            else
+            {
+                _loggerService.LogWarning($"Process start returned null for executable '{exePath}'.");
+            }
+
+            return process;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to start process: {ex.Message}");
+            _loggerService.LogError($"Failed to start process '{exePath}': {ex.Message}");
             return null;
         }
     }
@@ -105,6 +92,12 @@ public class ProcessService
 
         Process[] processes = Process.GetProcessesByName(processName);
 
+        if (processes.Length == 0)
+        {
+            _loggerService.LogWarning($"No running processes found with name '{processName}'.");
+            return 0;
+        }
+
         foreach (Process process in processes)
         {
             try
@@ -112,10 +105,13 @@ public class ProcessService
                 process.Kill();
                 process.WaitForExit();
                 killedCount++;
+
+                _loggerService.LogInfo($"Stopped process '{process.ProcessName}' (PID: {process.Id}).");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to stop process '{process.ProcessName}': {ex.Message}");
+                _loggerService.LogError(
+                    $"Failed to stop process '{process.ProcessName}' (PID: {process.Id}): {ex.Message}");
             }
         }
 
@@ -147,10 +143,46 @@ public class ProcessService
     {
         return Process
             .GetProcesses()
-            .Select(p => p.ProcessName)
+            .Select(process => process.ProcessName)
             .Distinct()
             .OrderBy(name => name)
             .ToList();
+    }
+
+    /// <summary>
+    /// Retrieves all running processes.
+    /// </summary>
+    /// <returns>A list of running processes.</returns>
+    public List<Process> GetRunningProcesses()
+    {
+        return Process
+            .GetProcesses()
+            .OrderBy(process => process.ProcessName)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Stops a process by its process ID.
+    /// </summary>
+    /// <param name="processId">The process ID.</param>
+    /// <returns>True if the process was stopped successfully; otherwise false.</returns>
+    public bool StopProcessById(int processId)
+    {
+        try
+        {
+            Process process = Process.GetProcessById(processId);
+
+            process.Kill();
+            process.WaitForExit();
+
+            _loggerService.LogInfo($"Stopped process '{process.ProcessName}' (PID: {processId}).");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _loggerService.LogError($"Failed to stop process with ID {processId}: {ex.Message}");
+            return false;
+        }
     }
 
     /// <summary>
