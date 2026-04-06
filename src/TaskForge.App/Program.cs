@@ -8,9 +8,9 @@ using TaskForge.App.Services;
 Console.WriteLine("=== TaskForge ===");
 
 LoggerService loggerService = new();
-ProcessService processService = new();
+ProcessService processService = new(loggerService);
 TaskRunnerService taskRunner = new(processService, loggerService);
-TaskConfigService configService = new();
+TaskConfigService configService = new(loggerService);
 
 string taskFilePath = Path.Combine("Config", "task.json");
 
